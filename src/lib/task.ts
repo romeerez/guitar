@@ -1,19 +1,38 @@
-import {observable, action} from "mobx";
+import {observable, action} from "mobx"
 
-const defineObjectProperty = (wrapper, object, key) =>
+type Wrapper = {
+  (...args: []): any
+  original: Function
+  handler: (resolve: Function, reject: Function) => void
+  args: any[]
+  object: WrapperObject
+}
+
+type State = 'initial' | 'pending' | 'success' | 'error'
+
+type WrapperObject = {
+  state: State
+  initial: boolean
+  pending: boolean
+  success: boolean
+  error: any
+  set: (state: State) => void
+}
+
+const defineObjectProperty = (wrapper: Object, object: any, key: string) =>
   Object.defineProperty(wrapper, key, {
     get: () => object[key],
     set: (value) => object[key] = value
   })
 
-const defineObject = (wrapper) => {
-  const object = observable({
+const defineObject = (wrapper: Wrapper) => {
+  const object = observable<WrapperObject>({
     state: 'initial',
     get initial() { return this.state === 'initial' },
     get pending() { return this.state === 'pending' },
     get success() { return this.state === 'success' },
     error: null,
-    set: action((value) => {
+    set: action((value: State) => {
       object.state = value
     })
   })
@@ -23,7 +42,7 @@ const defineObject = (wrapper) => {
   )
 }
 
-const promiseHandler = async (target, wrapper, resolve, reject) => {
+const promiseHandler = async (target: any, wrapper: Wrapper, resolve: Function, reject: Function) => {
   wrapper.object.set('pending')
   try {
     const result = await wrapper.original.apply(target, wrapper.args)
@@ -36,13 +55,13 @@ const promiseHandler = async (target, wrapper, resolve, reject) => {
   }
 }
 
-const run = (wrapper, args) => {
+const run = (wrapper: Wrapper, args: any[]) => {
   wrapper.args = args
   return new Promise(wrapper.handler)
 }
 
-const factory = (target, original, wrapper) => {
-  if (!wrapper) wrapper = (...args) => run(wrapper, args)
+const factory = (target: any, original: Function, wrapper?: Wrapper) => {
+  if (!wrapper) wrapper = ((...args: any[]) => run(wrapper as Wrapper, args)) as Wrapper
 
   wrapper.original = original
   wrapper.handler = promiseHandler.bind(null, target, wrapper)
@@ -52,32 +71,41 @@ const factory = (target, original, wrapper) => {
   return wrapper
 }
 
-const task = (target, property, descriptor) => {
-  if (!property) {
-    return factory(null, target)
-  } else {
-    descriptor.value = factory(target, descriptor.value)
-    return descriptor
-  }
+type Decorator = (target: Object, key: string) => void
+
+type Task = Decorator & {
+  once: Decorator
+  cached: Decorator
 }
 
-task.once = (target, property, descriptor) => {
-  const wrapper = (...args) => wrapper.promise || (wrapper.promise = run(wrapper, args))
+const task = (<T>(target: Object, key: string, descriptor: PropertyDescriptor) => {
+  descriptor.value = factory(target, descriptor.value)
+}) as Task
+
+task.once = ((target: Object, property: string, descriptor: PropertyDescriptor) => {
+  type OnceWrapper = Wrapper & { promise?: Promise<any> }
+
+  const wrapper = ((...args: any[]) =>
+    wrapper.promise || (wrapper.promise = run(wrapper, args))
+  ) as OnceWrapper
+
   descriptor.value = factory(target, descriptor.value, wrapper)
-  return descriptor
-}
+}) as Decorator
 
-task.cached = (target, property, descriptor) => {
-  const wrapper = (...args) => {
+task.cached = ((target: Object, property: string, descriptor: PropertyDescriptor) => {
+  type CachedWrapper = Wrapper & {
+    cache: { [key: string]: any },
+    resetCache: (...args: any[]) => void
+  }
+
+  const wrapper = ((...args) => {
     const key = JSON.stringify(args)
     wrapper.cache[key] || (wrapper.cache[key] = run(wrapper, args))
-  }
-
+  }) as CachedWrapper
   wrapper.cache = {}
   wrapper.resetCache = (...args) => delete wrapper.cache[JSON.stringify(args)]
 
   descriptor.value = factory(target, descriptor.value, wrapper)
-  return descriptor
-}
+}) as Decorator
 
 export default task

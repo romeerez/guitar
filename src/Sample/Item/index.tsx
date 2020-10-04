@@ -1,22 +1,24 @@
 import React from 'react'
 import Sample from 'Sample/Model'
-import ExpansionPanel from "@material-ui/core/ExpansionPanel"
-import ExpansionPanelDetails from "@material-ui/core/ExpansionPanelDetails"
-import ExpansionPanelSummary from "@material-ui/core/ExpansionPanelSummary"
+import Accordion from "@material-ui/core/Accordion"
+import AccordionDetails from "@material-ui/core/AccordionDetails"
+import AccordionSummary from "@material-ui/core/AccordionSummary"
 import Box from '@material-ui/core/Box'
 import ExpandMore from '@material-ui/icons/ExpandMore'
 import Divider from '@material-ui/core/Divider'
 import styled from "@material-ui/core/styles/styled"
 import withStyles from "@material-ui/core/styles/withStyles"
+import Menu from './Menu'
 import { observer } from "mobx-react"
+import Chart from 'Sample/Chart'
 
 const StyledExpansionPanelSummary = withStyles({
   content: {
     margin: '0 !important',
   }
-})(ExpansionPanelSummary)
+})(AccordionSummary)
 
-const StyledExpansionPanelDetails = styled(ExpansionPanelDetails)({
+const StyledExpansionPanelDetails = styled(AccordionDetails)({
   display: 'block',
   padding: 0,
 })
@@ -28,7 +30,7 @@ type Props = {
 }
 
 export default observer(function Item({sample}: Props) {
-  return <ExpansionPanel defaultExpanded>
+  return <Accordion defaultExpanded>
     <StyledExpansionPanelSummary
       expandIcon={<ExpandMore />}
     >
@@ -36,12 +38,12 @@ export default observer(function Item({sample}: Props) {
         {sample.name}
       </Box>
       <Box onClick={stopPropagation}>
-        menu
+        <Menu sample={sample} />
       </Box>
     </StyledExpansionPanelSummary>
     <StyledExpansionPanelDetails>
       <Divider/>
-      Chart
+      <Chart sample={sample} />
     </StyledExpansionPanelDetails>
-  </ExpansionPanel>
+  </Accordion>
 })

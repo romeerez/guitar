@@ -1,12 +1,10 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
+import React from 'react'
+import ReactDOM from 'react-dom'
 import { createMuiTheme } from '@material-ui/core/styles';
 import { ThemeProvider } from '@material-ui/styles';
-import * as serviceWorker from './serviceWorker';
-
-import './index.css';
-import Layout from './components/Layout/Layout';
-import Samples from './components/Sample/List';
+import Layout from 'Layout'
+import List from 'Sample/List'
+import './index.css'
 
 const theme = createMuiTheme({
   palette: {
@@ -30,12 +28,8 @@ ReactDOM.render(
   <ThemeProvider theme={theme}>
     <link href='https://fonts.googleapis.com/css?family=Roboto&display=swap' rel='stylesheet'/>
     <Layout>
-      <Samples />
+      <List />
     </Layout>
-  </ThemeProvider>
-, document.getElementById('root'));
-
-// If you want your app to work offline and load faster, you can change
-// unregister() to register() below. Note this comes with some pitfalls.
-// Learn more about service workers: https://bit.ly/CRA-PWA
-serviceWorker.unregister();
+  </ThemeProvider>,
+  document.getElementById('root')
+);

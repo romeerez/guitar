@@ -11,29 +11,45 @@ import { useForm } from "react-hook-form"
 import { yupResolver } from '@hookform/resolvers'
 import { object, string, mixed } from "yup"
 import Sample from 'Sample/Model'
+import {SampleRecord} from "db";
 
-const schema = object().shape({
+const createSchema = object().shape({
   name: string().required(),
-  files: mixed().required('Choose file')
-});
+  files: mixed().required('Choose file'),
+})
+
+const updateSchema = object().shape({
+  name: string().required(),
+})
 
 type Values = { name: string, files: FileList }
 
-export default function Modal ({onClose}: {onClose: () => void}) {
+type Props = {
+  onClose: () => void
+  sample?: Sample
+}
+
+export default function Modal ({onClose, sample}: Props) {
   const { register, handleSubmit, errors } = useForm({
-    resolver: yupResolver(schema)
+    resolver: yupResolver(sample ? updateSchema : createSchema),
+    defaultValues: {
+      name: sample?.name,
+      file: null,
+    },
   })
 
   const onSubmit = async ({ name, files }: Values) => {
-    const file = (files[0]) as any
-    const arrayBuffer = await file.arrayBuffer()
-    await Sample.create({ name, arrayBuffer })
-    onClose()
+    // const file = (files[0]) as any
+    // const params: Partial<SampleRecord> = { id: sample?.id, name }
+    // if (file)
+    //   params.arrayBuffer = await file.arrayBuffer()
+    // await Sample.save(params)
+    // onClose()
   }
 
   return <Dialog open={true} onClose={onClose}>
     <form onSubmit={handleSubmit<Values>(onSubmit)}>
-      <DialogTitle>{false ? 'Update' : 'Create'} New Sample</DialogTitle>
+      <DialogTitle>{sample ? 'Update' : 'Create'} New Sample</DialogTitle>
       <DialogContent>
         <TextField
           error={!!errors.name}
@@ -47,7 +63,7 @@ export default function Modal ({onClose}: {onClose: () => void}) {
         />
         <Box mt={1} mb={1}>
           <Button variant='contained' component='label' fullWidth>
-            {false ? 'this.file.name' : 'Upload .wav'}
+            Upload .wav
             <input ref={register} name='files' type='file' hidden={true} />
           </Button>
           {errors.file && <Box mt={1}>{errors.file.message}</Box>}
